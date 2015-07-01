@@ -97,10 +97,10 @@
 				895FE2A61B438C6A00E8B6F4 /* MainWindow.swift */,
 				89B915FD1B42FBA9002771D2 /* ViewController.swift */,
 				896672081B433AEC00C13C9A /* Request.swift */,
+				89B2C7EE1B43607F009A1E5B /* Helper.swift */,
 				89B915FF1B42FBA9002771D2 /* Images.xcassets */,
 				89B916011B42FBA9002771D2 /* Main.storyboard */,
 				89B915F91B42FBA9002771D2 /* Supporting Files */,
-				89B2C7EE1B43607F009A1E5B /* Helper.swift */,
 			);
 			path = MSMacHelpQueue;
 			sourceTree = "<group>";
