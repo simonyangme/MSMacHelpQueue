@@ -47,14 +47,14 @@ class ViewController: NSViewController {
                 var requestSignalProducers = [SignalProducer<RequestBundle, NoError>]()
                 for i in 0..<resultCount {
                     requestSignalProducers.append(SignalProducer { sink, disposable in
-                        sendNext(sink, (webView, i, Request()))
+                        sendNext(sink, (webView, Request()))
                         sendCompleted(sink)
-                    } |> extractNames |> extractTitles |> extractQuestions)
+                    } |> extractNames(i) |> extractTitles(i) |> extractQuestions(i))
                 }
                 
                 let requestsSignal = SignalProducer<SignalProducer<RequestBundle, NoError>, NoError>(values: requestSignalProducers)
                     |> flatten(.Concat)
-                    |> map { _, _, request in return request }
+                    |> map { _, request in return request }
 //                    |> on(started: {println("STARTED")}, event: {e in println(e)} )
                     |> filter { request in
                         if !contains(requests, request) {
