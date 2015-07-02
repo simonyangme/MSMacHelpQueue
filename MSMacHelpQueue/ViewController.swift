@@ -15,7 +15,6 @@ class ViewController: NSViewController {
     @IBOutlet var webView: WebView!
     var finishedNavigationSignal: Signal<WebView, NoError>!
     var finishedNavigationSink: SinkOf<Event<WebView, NoError>>!
-    var requestsSignalProducer: SignalProducer<Request, NoError>!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -39,37 +38,37 @@ class ViewController: NSViewController {
             self.webView.reload(nil)
         })
         
-        requestsSignalProducer = SignalProducer {sink, disposable in
-            var requests = [Request]()
-            self.finishedNavigationSignal.observe(next: { webView in
-                let resultCount = webView.stringByEvaluatingJavaScriptFromString("document.getElementsByClassName('event-author-wrap mb2').length")?.toInt()
-                if let resultCount = resultCount {
-                    var requestSignalProducers = [SignalProducer<RequestBundle, NoError>]()
-                    for i in 0..<resultCount {
-                        requestSignalProducers.append(SignalProducer { sink, disposable in
-                            sendNext(sink, (webView, i, Request()))
-                            sendCompleted(sink)
-                        } |> extractNames |> extractTitles |> extractQuestions)
-                    }
-                    
-                    let requestsSignal = SignalProducer<SignalProducer<RequestBundle, NoError>, NoError>(values: requestSignalProducers)
-                        |> flatten(.Concat)
-                        |> map { _, _, request in return request }
-//                        |> on(started: {println("started")}, event: {e in println(e)} )
-                        |> filter { request in
-                            if !contains(requests, request) {
-                                requests.append(request)
-                                return true
-                            } else {
-                                return false
-                            }
-                        }
-                    requestsSignal.start(sink)
+        let (requestsSignals, requestsSink) = SignalProducer<SignalProducer<Request, NoError>, NoError>.buffer(0)
+    
+        var requests = [Request]()
+        self.finishedNavigationSignal.observe(next: { webView in
+            let resultCount = webView.stringByEvaluatingJavaScriptFromString("document.getElementsByClassName('event-author-wrap mb2').length")?.toInt()
+            if let resultCount = resultCount {
+                var requestSignalProducers = [SignalProducer<RequestBundle, NoError>]()
+                for i in 0..<resultCount {
+                    requestSignalProducers.append(SignalProducer { sink, disposable in
+                        sendNext(sink, (webView, i, Request()))
+                        sendCompleted(sink)
+                    } |> extractNames |> extractTitles |> extractQuestions)
                 }
-            })
-        }
+                
+                let requestsSignal = SignalProducer<SignalProducer<RequestBundle, NoError>, NoError>(values: requestSignalProducers)
+                    |> flatten(.Concat)
+                    |> map { _, _, request in return request }
+//                    |> on(started: {println("STARTED")}, event: {e in println(e)} )
+                    |> filter { request in
+                        if !contains(requests, request) {
+                            requests.append(request)
+                            return true
+                        } else {
+                            return false
+                        }
+                    }
+                sendNext(requestsSink, requestsSignal)
+            }
+        })
         
-        requestsSignalProducer.start(next: { request in
+        ( requestsSignals |> flatten(.Merge) ).start(next: { request in
 //            println(request)
             let notification = NSUserNotification()
             notification.title = request.name
@@ -99,7 +98,7 @@ extension ViewController {
             case "admin":
                 sendNext(finishedNavigationSink, sender)
             default:
-                println("unrecognized! \(lastPathComponent)")
+//                println("unrecognized! \(lastPathComponent)")
                 break
             }
         }
