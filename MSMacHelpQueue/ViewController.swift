@@ -13,7 +13,6 @@ import ReactiveCocoa
 class ViewController: NSViewController {
     /// some web view
     @IBOutlet var webView: WebView!
-    var finishedNavigationSignal: Signal<WebView, NoError>!
     var finishedNavigationSink: SinkOf<Event<WebView, NoError>>!
     
     override func viewDidLoad() {
@@ -25,7 +24,7 @@ class ViewController: NSViewController {
         
         // Send WKWebViews when web view finishes loading
         let (pipeSignal, pipeSink) = Signal<WebView, NoError>.pipe()
-        finishedNavigationSignal = pipeSignal |> delay(4, onScheduler: QueueScheduler.mainQueueScheduler) |> throttle(2, onScheduler: QueueScheduler.mainQueueScheduler)
+        let finishedNavigationSignal = pipeSignal |> delay(4, onScheduler: QueueScheduler.mainQueueScheduler) |> throttle(2, onScheduler: QueueScheduler.mainQueueScheduler)
         finishedNavigationSink = pipeSink
         
         // Tries to hide unnecessary parts of the DOM
@@ -41,7 +40,7 @@ class ViewController: NSViewController {
         let (requestsSignals, requestsSink) = SignalProducer<SignalProducer<Request, NoError>, NoError>.buffer(0)
     
         var requests = [Request]()
-        self.finishedNavigationSignal.observe(next: { webView in
+        finishedNavigationSignal.observe(next: { webView in
             let resultCount = webView.stringByEvaluatingJavaScriptFromString("document.getElementsByClassName('event-author-wrap mb2').length")?.toInt()
             if let resultCount = resultCount {
                 var requestSignalProducers = [SignalProducer<RequestBundle, NoError>]()
