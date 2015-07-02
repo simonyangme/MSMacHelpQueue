@@ -13,6 +13,14 @@ import WebKit
 typealias RequestBundle = (WebView, Request)
 typealias RequestBundleSignal = SignalProducer<RequestBundle, NoError>
 
+/**
+Extracts name and saves it in the request
+
+:param: index Index of row in html
+:param: input Input signal
+
+:returns: New signal with name in the request
+*/
 func extractNames(index: Int)(input: RequestBundleSignal) -> RequestBundleSignal {
     return extractString("document.getElementsByClassName('event-author-wrap mb2')[\(index)].getElementsByTagName('span')[0].innerHTML", input) { (result, bundle, sink) in
         var newRequest = bundle.1
@@ -22,6 +30,14 @@ func extractNames(index: Int)(input: RequestBundleSignal) -> RequestBundleSignal
     }
 }
 
+/**
+Extracts title text and saves it in the request
+
+:param: index Index of row in html
+:param: input Input signal
+
+:returns: New signal with title text in the request
+*/
 func extractTitles(index: Int)(input: RequestBundleSignal) -> RequestBundleSignal {
     return extractString("document.getElementsByClassName('event-time mb1 mt0')[\(index)].innerHTML", input) { (result, bundle, sink) in
         var newRequest = bundle.1
@@ -31,6 +47,14 @@ func extractTitles(index: Int)(input: RequestBundleSignal) -> RequestBundleSigna
     }
 }
 
+/**
+Extracts question text and saves it in the request
+
+:param: index Index of row in html
+:param: input Input signal
+
+:returns: New signal with question text in the request
+*/
 func extractQuestions(index: Int)(input: RequestBundleSignal) -> RequestBundleSignal {
     return extractString("document.getElementsByClassName('event-content pt2 mb2')[\(index)].getElementsByTagName('span')[0].getElementsByTagName('p')[0].innerHTML", input) { (result, bundle, sink) in
         var newRequest = bundle.1
@@ -40,6 +64,15 @@ func extractQuestions(index: Int)(input: RequestBundleSignal) -> RequestBundleSi
     }
 }
 
+/**
+Runs provided JavaScript and makes the result available to the handler block
+
+:param: javascript  JavaScript to run
+:param: inputSignal The source signal
+:param: handler     Handler for processing the result from the script
+
+:returns: Returns a signal which emits what's sent to the sink in the `handler`
+*/
 func extractString(javascript: String, inputSignal: RequestBundleSignal, handler: (String, RequestBundle, SinkOf<Event<RequestBundle, NoError>>) -> ())
      -> RequestBundleSignal {
     return inputSignal |> flatMap(.Merge) { bundle in
