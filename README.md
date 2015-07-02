@@ -8,7 +8,7 @@ Install Carthage via [Homebrew](http://brew.sh):
 
 Checkout and build dependnecies:
 
-    carthage bootstrap
+    carthage bootstrap --no-use-binaries --platform mac
 
 You can now build and run with the included `xcodeproj`
 
