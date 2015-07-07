@@ -40,21 +40,28 @@ class ViewController: NSViewController {
         let (requestsSignals, requestsSink) = SignalProducer<SignalProducer<Request, NoError>, NoError>.buffer(0)
     
         var requests = [Request]()
+        // For each time the web view refreshes, we send a signal of all the `Request`s visible on the web view.
         finishedNavigationSignal.observe(next: { webView in
             let resultCount = webView.stringByEvaluatingJavaScriptFromString("document.getElementsByClassName('event-author-wrap mb2').length")?.toInt()
             if let resultCount = resultCount {
                 var requestSignalProducers = [SignalProducer<RequestBundle, NoError>]()
                 for i in 0..<resultCount {
+                    // One signal producer per request (a request represents a question in the help queue)
+                    // Each will complete after it's gone through the extract functions
                     requestSignalProducers.append(SignalProducer { sink, disposable in
                         sendNext(sink, (webView, Request()))
                         sendCompleted(sink)
                     } |> extractNames(i) |> extractTitles(i) |> extractQuestions(i))
                 }
                 
+                // We create a signal of request bundle signals
                 let requestsSignal = SignalProducer<SignalProducer<RequestBundle, NoError>, NoError>(values: requestSignalProducers)
+                    // Flatten the signal to get just a signal of request bundles
                     |> flatten(.Concat)
+                    // Remove the web view from the signal
                     |> map { _, request in return request }
 //                    |> on(started: {println("STARTED")}, event: {e in println(e)} )
+                    // Filter out requests we've seen before
                     |> filter { request in
                         if !contains(requests, request) {
                             requests.append(request)
@@ -67,6 +74,7 @@ class ViewController: NSViewController {
             }
         })
         
+        // Flatten the above, and create the notification
         ( requestsSignals |> flatten(.Merge) ).start(next: { request in
 //            println(request)
             let notification = NSUserNotification()
