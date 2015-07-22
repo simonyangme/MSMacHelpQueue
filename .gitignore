@@ -27,7 +27,7 @@ Temporary Items
 ### Swift ###
 # Xcode
 #
-build/
+#build/
 *.pbxuser
 !default.pbxuser
 *.mode1v3
@@ -53,5 +53,6 @@ DerivedData
 # Pods/
 
 # Carthage build
-Carthage/Build/
-Carthage.build
+#Carthage/Build/
+#Carthage.build
+
